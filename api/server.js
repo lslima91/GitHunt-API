@@ -7,7 +7,6 @@ import { graphqlExpress, graphiqlExpress } from 'graphql-server-express';
 
 import { 
   instrumentSchemaForTelemetry,
-  telemetryCollectorFromContext,
   formatTelemetryData 
 } from 'graphql-telemetry';
 
@@ -109,11 +108,14 @@ export function run({ PORT: portFromEnv = 3010 }) {
         Comments: new Comments()
       },
       formatResponse: (response, { context }) => {
-        const telemetryCollector = telemetryCollectorFromContext(context);
-        // TODO: Find a better way to notify collector when execution ends
-        telemetryCollector.executionDidEnd();
-        response.extensions = {
-          telemetry: formatTelemetryData(telemetryCollector),
+        const telemetryCollector = context._telemetryCollector;
+
+        if (telemetryCollector) {
+          // TODO: Find a better way to notify collector when execution ends
+          telemetryCollector.executionDidEnd();
+          response.extensions = {
+            telemetry: formatTelemetryData(telemetryCollector),
+          }
         }
         return response;
       },
