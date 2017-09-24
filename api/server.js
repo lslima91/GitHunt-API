@@ -12,6 +12,7 @@ import { invert, isString } from 'lodash';
 import { createServer } from 'http';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { execute, subscribe } from 'graphql';
+import { ApolloCaching, formatCachingData } from 'apollo-caching';
 
 import {
   GITHUB_CLIENT_ID,
@@ -127,9 +128,11 @@ export function run({
       opticsContext = OpticsAgent.context(req);
     }
 
+    const caching = new ApolloCaching();
+
     return {
       schema,
-      tracing: true,
+      tracing: false,
       context: {
         user,
         Repositories: new Repositories({ connector: gitHubConnector }),
@@ -137,7 +140,13 @@ export function run({
         Entries: new Entries(),
         Comments: new Comments(),
         opticsContext,
+        caching
       },
+      formatResponse: (response, options) => {
+        response.extensions = response.extensions || {};
+        response.extensions.caching = formatCachingData(caching);
+        return response;
+      }
     };
   }));
 

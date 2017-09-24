@@ -6,6 +6,8 @@ import { schema as gitHubSchema, resolvers as gitHubResolvers } from './github/s
 import { schema as sqlSchema, resolvers as sqlResolvers } from './sql/schema';
 import { pubsub } from './subscriptions';
 
+import { dependencyKeyForEntry, dependencyKeyForRepository } from './caching';
+
 const rootSchema = [`
 
 # A list of options for the sort order of the feed
@@ -93,11 +95,22 @@ const COMMENT_ADDED_TOPIC = 'commentAdded';
 
 const rootResolvers = {
   Query: {
-    feed(root, { type, offset, limit }, context) {
+    feed(root, { type, offset, limit }, context, info) {
       // Ensure API consumer can only fetch 20 items at most
       const protectedLimit = (limit < 1 || limit > 20) ? 20 : limit;
 
-      return context.Entries.getForFeed(type, offset, protectedLimit);
+      return context.Entries.getForFeed(type, offset, protectedLimit).then(({ entries, last_updated }) => {
+        let key;
+        if (type === 'NEW') {
+          key = "recentEntries";
+        } else if (type === 'TOP') {
+          key = "topEntries";
+        } else if (type === 'HOT') {
+          key = "hotEntries";
+        }
+        context.caching.addDependency(info.path, key, last_updated);
+        return entries;
+      });
     },
     entry(root, { repoFullName }, context) {
       return context.Entries.getByRepoFullName(repoFullName);
@@ -111,6 +124,9 @@ const rootResolvers = {
       if (!context.user) {
         throw new Error('Must be logged in to submit a repository.');
       }
+
+      context.caching.invalidate('recentEntries');
+      context.caching.invalidate("hotEntries");
 
       return Promise.resolve()
         .then(() => (
@@ -129,6 +145,9 @@ const rootResolvers = {
       if (!context.user) {
         throw new Error('Must be logged in to submit a comment.');
       }
+
+      context.caching.invalidate(dependencyKeyForEntry(repoFullName));
+
       return Promise.resolve()
         .then(() => (
           context.Comments.submitComment(
@@ -146,10 +165,13 @@ const rootResolvers = {
         });
     },
 
-    vote(root, { repoFullName, type }, context) {
+    vote(root, { repoFullName, type }, context, info) {
       if (!context.user) {
         throw new Error('Must be logged in to vote.');
       }
+
+      context.caching.invalidate("topEntries");
+      context.caching.invalidate("hotEntries");
 
       const voteValue = {
         UP: 1,
@@ -161,9 +183,10 @@ const rootResolvers = {
         repoFullName,
         voteValue,
         context.user.login,
-      ).then(() => (
-        context.Entries.getByRepoFullName(repoFullName)
-      ));
+      ).then(updated_at => {
+        context.caching.addDependency(info.path, dependencyKeyForEntry(repoFullName), updated_at);
+        return context.Entries.getByRepoFullName(repoFullName)
+      });
     },
   },
   Subscription: {

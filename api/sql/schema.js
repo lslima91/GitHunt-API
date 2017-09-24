@@ -1,5 +1,7 @@
 import { property, constant } from 'lodash';
 
+import { dependencyKeyForRepository, dependencyKeyForUser } from '../caching';
+
 export const schema = [`
 
 # A comment about an entry, submitted by a user
@@ -59,11 +61,17 @@ type Entry {
 
 export const resolvers = {
   Entry: {
-    repository({ repository_name }, _, context) {
-      return context.Repositories.getByFullName(repository_name);
+    repository({ repository_name }, _, context, info) {
+      return context.Repositories.getByFullName(repository_name).then(repository => {
+        context.caching.addDependency(info.path, dependencyKeyForRepository(repository_name), Date.parse(repository.updated_at));
+        return repository;
+      });
     },
-    postedBy({ posted_by }, _, context) {
-      return context.Users.getByLogin(posted_by);
+    postedBy({ posted_by }, _, context, info) {
+      return context.Users.getByLogin(posted_by).then(user => {
+        context.caching.addDependency(info.path, dependencyKeyForUser(posted_by), Date.parse(user.updated_at));
+        return user;
+      });
     },
     comments({ repository_name }, { limit = -1, offset = 0 }, context) {
       return context.Comments.getCommentsByRepoName(repository_name, limit, offset);

@@ -86,7 +86,10 @@ export class Entries {
 
     query.limit(limit);
 
-    return formatRows(query);
+    return formatRows(query).then(entries => {
+      return knex('entries').select(knex.raw('max(entries.updated_at) as last_updated')).first().then(({ last_updated }) => {
+        return { entries, last_updated };
+    })});
   }
 
   getByRepoFullName(name) {
@@ -135,7 +138,7 @@ export class Entries {
             username,
             vote_value: voteValue,
           })
-      ))
+        ))
       // Update hot score
       .then(() => this.updateHotScore(repoFullName));
   }
