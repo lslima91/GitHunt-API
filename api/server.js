@@ -4,7 +4,6 @@ import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { graphqlExpress, graphiqlExpress } from 'apollo-server-express';
-import OpticsAgent from 'optics-agent';
 import bodyParser from 'body-parser';
 import { invert, isString } from 'lodash';
 import { createServer } from 'http';
@@ -31,13 +30,9 @@ const WS_GQL_PATH = '/subscriptions';
 
 // Arguments usually come from env vars
 export function run({
-                      OPTICS_API_KEY,
-                      ENGINE_API_KEY,
-                      PORT: portFromEnv = 3010,
-                    } = {}) {
-  if (OPTICS_API_KEY) {
-    OpticsAgent.instrumentSchema(schema);
-  }
+  ENGINE_API_KEY,
+  PORT: portFromEnv = 3010,
+} = {}) {
 
   let port = portFromEnv;
 
@@ -47,8 +42,8 @@ export function run({
 
   let engine;
   if (ENGINE_API_KEY) {
-    const engine = new Engine({ engineConfig: {
-      apiKey: ENGINE_API_KEY },
+    engine = new Engine({
+      engineConfig: { apiKey: ENGINE_API_KEY },
       graphqlPort: port,
       stores: [
         {
@@ -60,7 +55,7 @@ export function run({
             },
           ],
         },
-      ]
+      ],
     });
     engine.start();
   }
@@ -71,6 +66,7 @@ export function run({
 
   const app = express();
 
+  console.log("2nd", engine);
   if (ENGINE_API_KEY) {
     app.use(engine.expressMiddleware());
   }
@@ -93,10 +89,6 @@ export function run({
 
   const sessionStore = setUpGitHubLogin(app);
   app.use(cookieParser(config.sessionStoreSecret));
-
-  if (OPTICS_API_KEY) {
-    app.use('/graphql', OpticsAgent.middleware());
-  }
 
   app.use('/graphql', graphqlExpress((req) => {
     if (!config.persistedQueries) {
