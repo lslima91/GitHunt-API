@@ -29,7 +29,6 @@ export function run({
   ENGINE_API_KEY,
   PORT: portFromEnv = 3010,
 } = {}) {
-
   let port = portFromEnv;
 
   if (isString(portFromEnv)) {
