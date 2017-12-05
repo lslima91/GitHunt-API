@@ -9,22 +9,18 @@ import { invert, isString } from 'lodash';
 import { createServer } from 'http';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { execute, subscribe } from 'graphql';
-
+import { Engine } from 'apollo-engine';
 import {
   GITHUB_CLIENT_ID,
   GITHUB_CLIENT_SECRET,
 } from './githubKeys';
-
 import { setUpGitHubLogin } from './githubLogin';
 import { GitHubConnector } from './github/connector';
 import { Repositories, Users } from './github/models';
 import { Entries, Comments } from './sql/models';
-
 import schema from './schema';
 import queryMap from '../extracted_queries.json';
 import config from './config';
-
-import { Engine } from 'apollo-engine';
 
 const WS_GQL_PATH = '/subscriptions';
 
@@ -66,7 +62,6 @@ export function run({
 
   const app = express();
 
-  console.log("2nd", engine);
   if (ENGINE_API_KEY) {
     app.use(engine.expressMiddleware());
   }
@@ -120,11 +115,6 @@ export function run({
       clientId: GITHUB_CLIENT_ID,
       clientSecret: GITHUB_CLIENT_SECRET,
     });
-
-    let opticsContext;
-    if (OPTICS_API_KEY) {
-      opticsContext = OpticsAgent.context(req);
-    }
 
     return {
       schema,
