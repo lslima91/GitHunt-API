@@ -45,7 +45,7 @@ export function run({
 
   const wsGqlURL = process.env.NODE_ENV !== 'production'
     ? `ws://localhost:${port}${WS_GQL_PATH}`
-    : `ws://api.githunt.com${WS_GQL_PATH}`;
+    : `wss://api.githunt.com${WS_GQL_PATH}`;
 
   const app = express();
 
