@@ -40,7 +40,7 @@ type Query {
   ): Entry
 
   # Return the currently logged in user, or null if nobody is logged in
-  currentUser: User
+  currentUser: User @cacheControl(scope: PRIVATE)
 }
 
 # The type of vote to record, when submitting a vote
