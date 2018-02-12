@@ -44,7 +44,13 @@ export function run({ ENGINE_API_KEY, PORT: portFromEnv = 3010 } = {}) {
         apiKey: ENGINE_API_KEY,
         stores: [
           {
-            name: 'embeddedCache',
+            name: 'publicResponseCache',
+            inMemory: {
+              cacheSize: 10485760,
+            },
+          },
+          {
+            name: 'privateResponseCache',
             inMemory: {
               cacheSize: 10485760,
             },
@@ -60,12 +66,12 @@ export function run({ ENGINE_API_KEY, PORT: portFromEnv = 3010 } = {}) {
           store: 'pq',
         },
         sessionAuth: {
-          store: 'embeddedCache',
+          store: 'privateResponseCache',
           header: 'Authorization',
         },
         queryCache: {
-          publicFullQueryStore: 'embeddedCache',
-          privateFullQueryStore: 'embeddedCache',
+          publicFullQueryStore: 'publicResponseCache',
+          privateFullQueryStore: 'privateResponseCache',
         },
         reporting: {
           debugReports: true,
