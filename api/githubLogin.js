@@ -41,8 +41,17 @@ export function setUpGitHubLogin(app) {
 
   app.use(session({
     secret: config.sessionStoreSecret,
-    resave: true,
-    saveUninitialized: true,
+
+    // Don't re-save the session to the store if it hasn't been modified. A
+    // value of `true` is the default for `resave`, though that is deprecated
+    // and will change in a future version.  Therefore, we set it to `false`.
+    resave: false,
+
+    // If a session is new, but not modified, don't save it to the store. A
+    // value of `true` is the default for `saveUninitialized`, though now
+    // deprecated and will change in the future.  Therefore, we set it `false`.
+    saveUninitialized: false,
+
     store,
   }));
 
